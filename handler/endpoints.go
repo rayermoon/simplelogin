@@ -13,13 +13,17 @@ func (s *Server) PostRegister(ctx echo.Context) error {
 	var body generated.RegisterUserRequest
 	err := ctx.Bind(&body)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
+	if !utils.IsValidEmail(string(*body.Email)) {
+		return ctx.JSON(http.StatusBadRequest, "bad email")
+	}
+
 	createRequest := repository.CreateUserInput{
 		Email:       string(*body.Email),
-		FullName:    *body.FullName,
+		FullName:    utils.StripXSS(*body.FullName),
 		Gender:      string(*body.Gender),
-		Occupation:  *body.Occupation,
+		Occupation:  utils.StripXSS(*body.Occupation),
 		Password:    *body.Password,
 		PhoneNumber: *body.PhoneNumber,
 	}
@@ -38,9 +42,10 @@ func (s *Server) PostLogin(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	// if body.Password != nil || body.PhoneNumber != nil {
-	// 	return ctx.JSON(http.StatusBadRequest, "field need to be filled")
-	// }
+
+	if !utils.IsValidEmail(string(*body.Email)) {
+		return ctx.JSON(http.StatusBadRequest, "bad email")
+	}
 
 	loginRequest := repository.LoginInput{
 		UserEmail: string(*body.Email),
@@ -48,7 +53,7 @@ func (s *Server) PostLogin(ctx echo.Context) error {
 	}
 	token, err := s.Repository.Login(ctx.Request().Context(), loginRequest)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	return ctx.JSON(http.StatusOK, token)
 }
@@ -62,7 +67,7 @@ func (s *Server) GetMyProfile(ctx echo.Context) error {
 	}
 	resp, err := s.Repository.GetUserById(ctx.Request().Context(), repository.GetUserByIdInput(data.UserID))
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
