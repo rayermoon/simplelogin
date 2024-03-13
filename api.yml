@@ -142,12 +142,10 @@ components:
     LoginRequest:
       type: object
       properties:
-        phone_number:
+        email:
           type: string
-          minLength: 10
-          maxLength: 13
-          pattern: '^\+62[0-9]+$'
-          description: The user's phone number, starting with +62 (Indonesia country code).
+          format: email
+          description: The user's email address.
         password:
           type: string
           minLength: 6

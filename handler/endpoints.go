@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/SawitProRecruitment/UserService/generated"
@@ -12,12 +11,10 @@ import (
 
 func (s *Server) PostRegister(ctx echo.Context) error {
 	var body generated.RegisterUserRequest
-
 	err := ctx.Bind(&body)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)
 	}
-
 	createRequest := repository.CreateUserInput{
 		Email:       string(*body.Email),
 		FullName:    *body.FullName,
@@ -26,9 +23,10 @@ func (s *Server) PostRegister(ctx echo.Context) error {
 		Password:    *body.Password,
 		PhoneNumber: *body.PhoneNumber,
 	}
+
 	err = s.Repository.CreateUser(ctx.Request().Context(), createRequest)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	return ctx.JSON(http.StatusOK, "ok")
 }
@@ -38,20 +36,21 @@ func (s *Server) PostLogin(ctx echo.Context) error {
 
 	err := ctx.Bind(&body)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
+	// if body.Password != nil || body.PhoneNumber != nil {
+	// 	return ctx.JSON(http.StatusBadRequest, "field need to be filled")
+	// }
 
 	loginRequest := repository.LoginInput{
-		PhoneNumber: *body.PhoneNumber,
-		Password:    *body.Password,
+		UserEmail: string(*body.Email),
+		Password:  *body.Password,
 	}
 	token, err := s.Repository.Login(ctx.Request().Context(), loginRequest)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, err)
 	}
-
-	Message := fmt.Sprintf("User Token %s", token)
-	return ctx.JSON(http.StatusOK, Message)
+	return ctx.JSON(http.StatusOK, token)
 }
 
 func (s *Server) GetMyProfile(ctx echo.Context) error {
@@ -80,17 +79,31 @@ func (s *Server) PutMyProfile(ctx echo.Context) error {
 
 	err = ctx.Bind(&body)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	dataUser, err := s.Repository.GetUserById(ctx.Request().Context(), repository.GetUserByIdInput(data.UserID))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	UpdateRequest := repository.UpdateUserInput{
-		UserId:      data.UserID,
-		FullName:    body.FullName,
-		PhoneNumber: body.PhoneNumber,
+		UserId: data.UserID,
+	}
+	if body.FullName != "" {
+		UpdateRequest.FullName = body.FullName
+	} else {
+		UpdateRequest.FullName = dataUser.FullName
+	}
+
+	if body.PhoneNumber != "" {
+		UpdateRequest.PhoneNumber = body.PhoneNumber
+	} else {
+		UpdateRequest.PhoneNumber = dataUser.PhoneNumber
 	}
 
 	err = s.Repository.UpdateUser(ctx.Request().Context(), UpdateRequest)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, "OK")

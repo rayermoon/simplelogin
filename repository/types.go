@@ -39,7 +39,7 @@ type UserOutput struct {
 	FullName    string
 	Gender      string
 	Occupation  string
-	Password    string
+	Password    string `json:"-"`
 	PhoneNumber string
 	LoginCount  int
 }

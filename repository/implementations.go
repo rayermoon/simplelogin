@@ -82,6 +82,10 @@ func (r *Repository) GetUserByPhoneNumber(ctx context.Context, input GetUserByPh
 	return
 }
 func (r *Repository) CreateUser(ctx context.Context, input CreateUserInput) (err error) {
+	hashPass, err := utils.HashPassword(input.Password)
+	if err != nil {
+		return
+	}
 	query := `
 		INSERT INTO sp_users 
 			(
@@ -103,8 +107,8 @@ func (r *Repository) CreateUser(ctx context.Context, input CreateUserInput) (err
 		input.FullName,
 		input.Gender,
 		input.Occupation,
-		input.Password,
-		input.Password,
+		hashPass,
+		input.PhoneNumber,
 	)
 	if err != nil {
 		return
@@ -123,7 +127,7 @@ func (r *Repository) UpdateUser(ctx context.Context, input UpdateUserInput) (err
 			full_name = $1,
 			phone_number = $2
 		where 
-			user_id = $3
+			id = $3
 		`
 
 	stmt, err := r.Db.Prepare(query)
@@ -148,7 +152,7 @@ func (r *Repository) UpdateUser(ctx context.Context, input UpdateUserInput) (err
 
 // can be separated into multiple functions and add transactional for testing just create a simple one
 func (r *Repository) Login(ctx context.Context, input LoginInput) (output LoginOutput, err error) {
-	data, err := r.GetUserByPhoneNumber(ctx, GetUserByPhoneNumberInput(input.PhoneNumber))
+	data, err := r.GetUserByEmail(ctx, GetUserByEmailInput(input.UserEmail))
 	if err != nil {
 		return
 	}
@@ -167,7 +171,7 @@ func (r *Repository) Login(ctx context.Context, input LoginInput) (output LoginO
 		set 
 			login_count = $1
 		where 
-			user_id = $2
+			id = $2
 		`
 
 	stmtUpdate, err := r.Db.Prepare(queryUpdate)
