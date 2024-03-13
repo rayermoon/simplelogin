@@ -1,0 +1,185 @@
+openapi: 3.0.0
+info:
+  title: Sawit pro test
+  version: 1.0.0
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      description: |
+        This endpoint allows users to register with their phone number, email, full name, gender, occupation, and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+      responses:
+        '200':
+          description: User registered successfully
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                    description: The ID of the newly registered user.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message containing the fields that failed validation and the rule they failed at.
+  /login:
+    post:
+      summary: User login
+      description: |
+        This endpoint allows users to login with their phone number and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    description: The ID of the logged-in user.
+                  jwt_token:
+                    type: string
+                    description: JWT token for authentication.
+        '400':
+          description: Bad request
+  /my_profile:
+    get:
+      summary: Get user profile
+      description: |
+        This endpoint retrieves the profile of the authenticated user.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '403':
+          description: Forbidden
+    put:
+      summary: Update user profile
+      description: |
+        This endpoint updates the profile of the authenticated user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Successful update
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The success message.
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict
+components:
+  schemas:
+    RegisterUserRequest:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+          minLength: 10
+          maxLength: 13
+          pattern: '^\+62[0-9]+$'
+          description: The user's phone number, starting with +62 (Indonesia country code).
+        email:
+          type: string
+          format: email
+          description: The user's email address.
+        fullName:
+          type: string
+          minLength: 3
+          maxLength: 60
+          description: The user's full name.
+        gender:
+          type: string
+          enum: [male, female]
+          description: The user's gender.
+        occupation:
+          type: string
+          maxLength: 50
+          description: The user's occupation.
+        password:
+          type: string
+          minLength: 6
+          maxLength: 64
+          pattern: '^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{6,}$'
+          description: The user's password, containing at least 1 capital letter, 1 number, and 1 special character.
+    LoginRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 13
+          pattern: '^\+62[0-9]+$'
+          description: The user's phone number, starting with +62 (Indonesia country code).
+        password:
+          type: string
+          minLength: 6
+          maxLength: 64
+          description: The user's password.
+    UpdateUserProfileRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 13
+          pattern: '^\+62[0-9]{9,12}$'
+          description: The updated phone number.
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 60
+          description: The updated full name.
+      required:
+        - phone_number
+        - full_name
+    UserProfileResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the user.
+        phone_number:
+          type: string
+          description: The phone number of the user.
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
